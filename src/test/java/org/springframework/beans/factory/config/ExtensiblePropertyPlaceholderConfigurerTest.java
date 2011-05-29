@@ -9,8 +9,7 @@ import org.mockito.MockitoAnnotations;
 import java.util.Arrays;
 import java.util.List;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.fail;
+import static junit.framework.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class ExtensiblePropertyPlaceholderConfigurerTest {
@@ -51,6 +50,26 @@ public class ExtensiblePropertyPlaceholderConfigurerTest {
         when(beanPicker.pick(beanFactory, "${", "}")).thenReturn(beanStore);
         when(beanStore.getBeansFor(PROPERTY_NAME)).thenReturn(beans);
         when(beanStore.getAllPropertyPlaceholders()).thenReturn(Arrays.asList(PROPERTY_NAME));
+    }
+
+    @Test
+    public void problemOccursWhileManipulatingThePropertyValue() {
+        configurer.setPropertyValueManipulator(propertyValueManipulator);
+
+        PropertyValueManipulator.ValueManipulationException error = new PropertyValueManipulator.ValueManipulationException("error");
+
+        when(propertyStore.get(PROPERTY_NAME)).thenReturn(PROPERTY_VALUE);
+        when(propertyValueManipulator.manipulate(PROPERTY_VALUE)).thenThrow(error);
+
+        try {
+            configurer.postProcessBeanFactory(beanFactory);
+            fail();
+        } catch (IllegalArgumentException e) {
+            assertEquals("A problem occurred when trying to manipulate property value for: " + PROPERTY_NAME, e.getMessage());
+            assertSame(error, e.getCause());
+        }
+
+        verifyZeroInteractions(propertySetter);
     }
 
     @Test

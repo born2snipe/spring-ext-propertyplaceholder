@@ -3,9 +3,12 @@ package org.springframework.beans.factory.config;
 
 import org.springframework.beans.BeansException;
 
+import java.text.MessageFormat;
 import java.util.List;
 
 public class ExtensiblePropertyPlaceholderConfigurer implements BeanFactoryPostProcessor {
+    private static final String MANIPULATION_PROBLEM = "A problem occurred when trying to manipulate property value for: {0}";
+    private static final String PROPERTY_NOT_FOUND = "Can not locate property ''{0}''";
     private static final String DEFAULT_PLACEHOLDER_PREFIX = "${";
     private static final String DEFAULT_PLACEHOLDER_SUFFIX = "}";
 
@@ -27,10 +30,15 @@ public class ExtensiblePropertyPlaceholderConfigurer implements BeanFactoryPostP
         for (String propertyPlaceholder : propertyPlaceholders) {
             Object propertyValue = propertyStore.get(propertyPlaceholder);
             if (propertyValue == null) {
-                throw new IllegalStateException("Can not locate property '" + propertyPlaceholder + "'");
+                throw new IllegalStateException(MessageFormat.format(PROPERTY_NOT_FOUND, propertyPlaceholder));
             }
-            Object manipulatedValue = propertyValueManipulator.manipulate(propertyValue);
-            propertySetter.set(propertyPlaceholder, manipulatedValue, beanStore.getBeansFor(propertyPlaceholder));
+
+            try {
+                Object manipulatedValue = propertyValueManipulator.manipulate(propertyValue);
+                propertySetter.set(propertyPlaceholder, manipulatedValue, beanStore.getBeansFor(propertyPlaceholder));
+            } catch (PropertyValueManipulator.ValueManipulationException e) {
+                throw new IllegalArgumentException(MessageFormat.format(MANIPULATION_PROBLEM, propertyPlaceholder), e);
+            }
         }
     }
 
