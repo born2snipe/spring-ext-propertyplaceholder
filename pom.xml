@@ -98,7 +98,8 @@
     </pluginRepositories>
 
     <scm>
-        <developerConnection>scm:git:git://github.com/born2snipe/gamejolt-api.git</developerConnection>
+        <developerConnection>scm:git:git://github.com/born2snipe/spring-ext-propertyplaceholder.git
+        </developerConnection>
     </scm>
 
     <distributionManagement>
