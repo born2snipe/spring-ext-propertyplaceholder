@@ -5,6 +5,13 @@ import java.text.MessageFormat;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Allows embedding environment variables in property value
+ * <p/>
+ * example:
+ * <p/>
+ * key=file:${env.JAVA_HOME}/bin/java
+ */
 public class EnvironmentVariablePropertyValueManipulator implements PropertyValueManipulator {
     private static final String NOT_FOUND = "Could not locate environment variable ''{0}''";
     private static final Pattern ENV_PATTERN = Pattern.compile("\\$\\{env\\.(.+?)\\}", Pattern.CASE_INSENSITIVE);

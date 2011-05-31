@@ -6,6 +6,9 @@ import org.springframework.core.io.Resource;
 
 import java.util.Properties;
 
+/**
+ * Using property file(s) as a store
+ */
 public class PropertiesFilePropertyStore implements PropertyStore, InitializingBean {
     private Properties properties = new Properties();
     private Resource[] locations;
