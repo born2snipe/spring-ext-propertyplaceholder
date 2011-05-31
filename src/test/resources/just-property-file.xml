@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+	   					   http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="test" class="org.springframework.beans.factory.config.IntegrationTest.TestBean">
+        <property name="value" value="${key}"/>
+    </bean>
+
+    <bean id="propertyPlaceholder"
+          class="org.springframework.beans.factory.config.ExtensiblePropertyPlaceholderConfigurer">
+        <property name="propertyStore">
+            <bean class="org.springframework.beans.factory.config.PropertiesFilePropertyStore">
+                <property name="location" value="classpath:dev.properties"/>
+            </bean>
+        </property>
+    </bean>
+
+
+</beans>
