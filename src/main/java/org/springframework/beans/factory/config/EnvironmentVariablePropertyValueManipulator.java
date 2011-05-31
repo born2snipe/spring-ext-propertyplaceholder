@@ -18,7 +18,7 @@ public class EnvironmentVariablePropertyValueManipulator implements PropertyValu
         this.variableAccessor = variableAccessor;
     }
 
-    public Object manipulate(Object value) {
+    public String manipulate(String value) {
         String result = value.toString();
         Matcher matcher = ENV_PATTERN.matcher(result);
         int offset = 0;

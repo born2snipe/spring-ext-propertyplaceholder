@@ -1,43 +1,60 @@
 package org.springframework.beans.factory.config;
 
 
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanDefinitionStoreException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.BeanNameAware;
+import org.springframework.util.StringValueResolver;
 
-import java.text.MessageFormat;
-import java.util.List;
+import java.lang.reflect.Method;
 
-public class ExtensiblePropertyPlaceholderConfigurer implements BeanFactoryPostProcessor {
-    private static final String MANIPULATION_PROBLEM = "A problem occurred when trying to manipulate property value for: {0}";
-    private static final String PROPERTY_NOT_FOUND = "Can not locate property ''{0}''";
+public class ExtensiblePropertyPlaceholderConfigurer implements BeanFactoryPostProcessor, BeanNameAware, BeanFactoryAware {
     private static final String DEFAULT_PLACEHOLDER_PREFIX = "${";
     private static final String DEFAULT_PLACEHOLDER_SUFFIX = "}";
 
-    private BeanPicker beanPicker;
-    private PropertySetter propertySetter;
     private PropertyStore propertyStore;
     private PropertyValueManipulator propertyValueManipulator = new NoOpPropertyValueManipulator();
     private String placeholderPrefix = DEFAULT_PLACEHOLDER_PREFIX;
     private String placeholderSuffix = DEFAULT_PLACEHOLDER_SUFFIX;
+    private BeanFactory beanFactory;
+    private String beanName;
 
-    public ExtensiblePropertyPlaceholderConfigurer(BeanPicker beanPicker, PropertySetter propertySetter) {
-        this.beanPicker = beanPicker;
-        this.propertySetter = propertySetter;
+    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactoryToProcess) throws BeansException {
+        StringValueResolver valueResolver = new PlaceholderValueResolver(propertyStore, propertyValueManipulator, placeholderPrefix, placeholderSuffix);
+
+        /**
+         * Everything below here is a direct copy-n-paste from the PropertyPlaceholderConfigurer
+         */
+        BeanDefinitionVisitor visitor = new BeanDefinitionVisitor(valueResolver);
+        String[] beanNames = beanFactoryToProcess.getBeanDefinitionNames();
+        for (String curName : beanNames) {
+            if (!(curName.equals(this.beanName) && beanFactoryToProcess.equals(this.beanFactory))) {
+                BeanDefinition bd = beanFactoryToProcess.getBeanDefinition(curName);
+                try {
+                    visitor.visitBeanDefinition(bd);
+                } catch (Exception ex) {
+                    throw new BeanDefinitionStoreException(bd.getResourceDescription(), curName, ex.getMessage());
+                }
+            }
+        }
+
+        // New in Spring 2.5: resolve placeholders in alias target names and aliases as well.
+        beanFactoryToProcess.resolveAliases(valueResolver);
+
+        addEmbeddedValueResolver(beanFactoryToProcess, valueResolver);
     }
 
-    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
-        BeanStore beanStore = beanPicker.pick(beanFactory, placeholderPrefix, placeholderSuffix);
-        List<String> propertyPlaceholders = beanStore.getAllPropertyPlaceholders();
-        for (String propertyPlaceholder : propertyPlaceholders) {
-            Object propertyValue = propertyStore.get(propertyPlaceholder);
-            if (propertyValue == null) {
-                throw new IllegalStateException(MessageFormat.format(PROPERTY_NOT_FOUND, propertyPlaceholder));
-            }
-
+    private void addEmbeddedValueResolver(ConfigurableListableBeanFactory beanFactoryToProcess, StringValueResolver valueResolver) {
+        // New in Spring 3.0: resolve placeholders in embedded values such as annotation attributes.
+        Method method = BeanUtils.findMethod(ConfigurableListableBeanFactory.class, "addEmbeddedValueResolver", StringValueResolver.class);
+        if (method != null) {
             try {
-                Object manipulatedValue = propertyValueManipulator.manipulate(propertyValue);
-                propertySetter.set(propertyPlaceholder, manipulatedValue, beanStore.getBeansFor(propertyPlaceholder));
-            } catch (PropertyValueManipulator.ValueManipulationException e) {
-                throw new IllegalArgumentException(MessageFormat.format(MANIPULATION_PROBLEM, propertyPlaceholder), e);
+                method.invoke(beanFactoryToProcess, valueResolver);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
     }
@@ -58,8 +75,16 @@ public class ExtensiblePropertyPlaceholderConfigurer implements BeanFactoryPostP
         this.placeholderSuffix = placeholderSuffix;
     }
 
+    public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+        this.beanFactory = beanFactory;
+    }
+
+    public void setBeanName(String name) {
+        beanName = name;
+    }
+
     private class NoOpPropertyValueManipulator implements PropertyValueManipulator {
-        public Object manipulate(Object value) {
+        public String manipulate(String value) {
             return value;
         }
     }

@@ -2,7 +2,7 @@ package org.springframework.beans.factory.config;
 
 
 public interface PropertyValueManipulator {
-    Object manipulate(Object value) throws ValueManipulationException;
+    String manipulate(String value) throws ValueManipulationException;
 
     public static class ValueManipulationException extends RuntimeException {
         public ValueManipulationException(String s) {

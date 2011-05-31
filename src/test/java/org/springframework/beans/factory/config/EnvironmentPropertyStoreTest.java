@@ -16,6 +16,11 @@ public class EnvironmentPropertyStoreTest {
     }
 
     @Test
+    public void emptyString() {
+        assertNull(store.get(""));
+    }
+
+    @Test
     public void propertyDoesNotExist() {
         assertNull(store.get("does.not.exist"));
     }

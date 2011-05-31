@@ -17,6 +17,11 @@ public class SystemPropertyStoreTest {
     }
 
     @Test
+    public void emptyString() {
+        assertNull(store.get(""));
+    }
+
+    @Test
     public void propertyWasNotFound() {
         assertNull(store.get("does.not.exist"));
     }
